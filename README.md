@@ -34,30 +34,37 @@ verification script.
 
 ## Install & run
 
-Two terminals are needed — one for the Spring Boot backend, one for the Vite frontend.
+### Prerequisites
+- JDK 17+ ([Temurin](https://adoptium.net))
+- Maven 3.8+ (or use the included `mvnw` wrapper if present)
+- Node.js 18+
+
+### Clone
+```bash
+git clone https://github.com/inshrashaikh/Smart-Examination-Seating-Arrangement-System.git
+cd Smart-Examination-Seating-Arrangement-System
+```
 
 ### Backend (H2 profile, no MySQL needed)
-
-```powershell
-cd "D:\Project\Smart Examination Seating Arrangement System\backend"
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
+Open terminal 1 in the project root:
+```bash
+cd backend
+mvn spring-boot:run "-Dspring-boot.run.profiles=h2"
 ```
-
-> Maven 3.8+ and JDK 17+ are required. The H2 in-memory database is auto-seeded on first
-> run (200 students, 8 halls, 5 exams). The console is at
-> <http://localhost:8080/h2-console> (JDBC URL `jdbc:h2:mem:examseat`, user `sa`, no password).
+H2 is auto-seeded on first run (200 students, 8 halls, 5 exams).
+Console: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:examseat`, user `sa`, no password).
 
 ### Frontend
-
-```powershell
-cd "D:\Project\Smart Examination Seating Arrangement System"
-npm install        # first time only
-npm run dev        # http://localhost:5173
+Open terminal 2 in the project root:
+```bash
+npm install
+npm run dev
 ```
+Open http://localhost:5173
 
-The Vite dev server proxies `/api` → `http://localhost:8080`. CORS is configured for
-`http://localhost:5173`.
-
+### Demo logins
+- Admin: `admin@exam.com` / `admin123`
+- Faculty: `faculty1@exam.com` / `faculty123`
 ### Full demo flow (end-to-end)
 
 1. **Backend** starts on `http://localhost:8080` (H2 profile)
@@ -326,32 +333,3 @@ so both paths honour the same vocabulary.
 
 ---
 
-## Known backend limitations the UI works around
-
-Documented rather than papered over:
-
-| Limitation | What the UI does |
-| --- | --- |
-| No write route for attendance marks | Present/absent toggles are session-local; the page says so instead of implying persistence |
-| `PUT /api/auth/me` requires `email, name, password, role` together | Both profile pages ask you to re-enter your password before saving; it is never stored |
-| `role` is accepted by `PUT /api/auth/me` but ignored server-side | Role is read-only in the UI; verified that a faculty token sending `role: "ADMIN"` stays faculty and still gets `403` on `/api/faculty` |
-| No per-notification delete endpoint | The inbox has "mark read" only — no destructive "clear" affordance |
-| `GET /api/settings` is admin-only | Faculty profile saves go through `PUT /api/auth/me`, not settings |
-| `SeatingServiceImpl.findAt` returns `null` for a ref carrying only `allocationId` | `seatingService.swap` always sends `row` + `col` (plus an advisory `allocationId`) |
-| Duty-scoped attendance ignores `format` | Faculty exports route through `/api/reports/attendance?hallId=` |
-
-Three **backend** issues surfaced while wiring this up. Only the first was fixed here;
-the other two are noted so they are not mistaken for frontend behaviour:
-
-1. **Fixed — `SecurityConfig` Ant pattern 403'd faculty reads.** `PUBLIC_GET` listed
-   `/api/duties/my/*`, and `*` matches exactly one path segment, so
-   `/api/duties/my/hall/{hallId}/plan` and `.../attendance` (three segments) fell through
-   to the admin-only rule. Explicit entries were added.
-2. **Not fixed — `SeatingServiceImpl.findAt`** returns `null` for a seat ref carrying
-   only `allocationId`, because the row/col guard runs before the id branch. Worked
-   around client-side; the backend guard is still worth correcting.
-3. **Not fixed — misleading 400 on duty assign.** Sending an invalid `role` enum yields
-   *"Request body is missing or malformed"* rather than naming the bad field. The
-   rejection is correct, the message is not.
-
-All three are described in `backend/README.md` and `TEST_CHECKLIST.md`.
