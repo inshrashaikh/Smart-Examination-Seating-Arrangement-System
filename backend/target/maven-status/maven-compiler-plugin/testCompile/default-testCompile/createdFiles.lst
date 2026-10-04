@@ -3,3 +3,4 @@ com\examseat\service\SeatingServiceImplTest.class
 com\examseat\service\StudentServiceImplTest.class
 com\examseat\algorithm\SeatingAlgorithmTest.class
 com\examseat\security\DataSeederFixture.class
+com\examseat\security\FacultyDutyRouteAccessTest.class

@@ -133,6 +133,10 @@ public class DutyController {
                         .map(id -> dutyService.myHallIds(resolved, id)).orElse(List.of())
                 : dutyService.myHallIds(resolved, examId);
 
+        if (!CurrentUser.isAdmin() && !allowed.contains(hallId)) {
+            throw ApiException.forbidden("You are not assigned to hall " + hallId);
+        }
+
         return ApiResponse.ok(seatingPlans(resolved, examId, allowed).stream()
                 .filter(plan -> hallId.equals(plan.getHallId()))
                 .toList());

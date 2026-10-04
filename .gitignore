@@ -1,5 +1,6 @@
 node_modules
 dist
+target
 dist-ssr
 .env
 .env.local

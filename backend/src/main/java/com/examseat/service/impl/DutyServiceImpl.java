@@ -332,7 +332,7 @@ public class DutyServiceImpl implements DutyService {
             toSave.add(entity);
         }
 
-        attendanceMarkRepository.saveAll(toSave);
+        attendanceMarkRepository.saveAllAndFlush(toSave);
 
         log.info("Attendance saved by {}: {}/{} marks for {} {}",
                 invigilator.getEmail(), toSave.size(), valid.size(), examId, hall.getCode());

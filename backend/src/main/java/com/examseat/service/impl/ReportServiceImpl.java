@@ -301,7 +301,10 @@ public class ReportServiceImpl implements ReportService {
         // One query for every mark on the exam, keyed by allocation id, rather than one
         // per candidate. Null value means "nobody has marked this seat yet", which is
         // distinct from `false` ("marked absent") and is preserved as null on the row.
-        Map<String, AttendanceMark> marks = attendanceMarkRepository.indexByAllocationForExam(examId);
+        Map<String, AttendanceMark> marks = new java.util.HashMap<>();
+        for (AttendanceMark m : attendanceMarkRepository.findByExamId(examId)) {
+            marks.put(m.getAllocationId(), m);
+        }
 
         List<AttendanceSheet.HallRef> halls = new ArrayList<>();
         List<AttendanceSheet.Row> rows = new ArrayList<>();

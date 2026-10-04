@@ -57,6 +57,10 @@ class SecurityScopingTest {
     private String facultyOneToken;
     private String facultyTwoToken;
 
+    private String hallOne;
+    private String hallTwo;
+    private String examId;
+
     @BeforeEach
     void seed() throws Exception {
         seeder.seedAccounts();
@@ -64,6 +68,16 @@ class SecurityScopingTest {
         adminToken = token("admin@exam.com", "admin123");
         facultyOneToken = token("faculty1@exam.com", "faculty123");
         facultyTwoToken = token("faculty2@exam.com", "faculty123");
+
+        // Resolve HALL_ONE, HALL_TWO, EXAM_ID from seeded data
+        String[] dutiedHalls = seeder.hallsDutiedBy("faculty1@exam.com");
+        this.hallOne = dutiedHalls.length > 0 ? dutiedHalls[0] : "H-S1";
+
+        String notDutiedPlan = seeder.hallNotDutiedBy("faculty1@exam.com");
+        // hallNotDutiedBy returns "EX-S01-H-S2", split into 4 parts: ["EX", "S01", "H", "S2"]
+        String[] parts = notDutiedPlan.split("-");
+        this.examId = parts[0] + "-" + parts[1];   // EX-S01
+        this.hallTwo = parts[2] + "-" + parts[3]; // H-S2
     }
 
     /* ------------------------------------------------------------------- auth */
@@ -224,7 +238,7 @@ class SecurityScopingTest {
         String[] allowed = seeder.hallsDutiedBy("faculty1@exam.com");
         assertThat(plans).isNotNull();
         assertThat(plans).allSatisfy(plan ->
-                assertThat(plan.get("hallId").toString()).isIn(allowed));
+                assertThat(plan.get("hallId").toString()).isIn((Object[]) allowed));
     }
 
     @Test
@@ -315,6 +329,32 @@ class SecurityScopingTest {
     }
 
     /* ------------------------------------------------------------------ helpers */
+
+    @Test
+    @DisplayName("faculty can GET plan and attendance for their own assigned hall, 403 for unassigned")
+    void facultyCanReadOwnHallPlanAndAttendance() throws Exception {
+        String auth = "Bearer " + facultyOneToken;
+
+        // --- plan for their own assigned hall ---
+        mockMvc.perform(get("/api/duties/my/hall/" + hallOne + "/plan")
+                        .header("Authorization", auth))
+                .andExpect(status().isOk());
+
+        // --- plan for a hall they do NOT supervise → 403
+        mockMvc.perform(get("/api/duties/my/hall/" + hallTwo + "/plan")
+                        .header("Authorization", auth))
+                .andExpect(status().isForbidden());
+
+        // --- attendance for their own assigned hall
+        mockMvc.perform(get("/api/duties/my/hall/" + hallOne + "/attendance?examId=" + examId)
+                        .header("Authorization", auth))
+                .andExpect(status().isOk());
+
+        // --- attendance for a hall they do NOT supervise → 403
+        mockMvc.perform(get("/api/duties/my/hall/" + hallTwo + "/attendance?examId=" + examId)
+                        .header("Authorization", auth))
+                .andExpect(status().isForbidden());
+    }
 
     private String message(MvcResult result) throws Exception {
         ApiResponse<?> body = json.readValue(result.getResponse().getContentAsString(), ApiResponse.class);

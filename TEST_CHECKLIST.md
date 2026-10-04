@@ -7,11 +7,11 @@ backend with no mock data in the request path.
 
 ```powershell
 # terminal 1 — backend (H2 in-memory, seeded)
-cd "D:\Project\Smart Examination Seating Arrangement System\backend"
-& "C:\maven\apache-maven-3.9.6\bin\mvn.cmd" -B spring-boot:run "-Dspring-boot.run.profiles=h2"
+cd backend
+mvn spring-boot:run
 
 # terminal 2 — frontend
-cd "D:\Project\Smart Examination Seating Arrangement System"
+cd ..
 npm run dev            # http://localhost:5173
 ```
 

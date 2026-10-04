@@ -16,13 +16,27 @@ returns.
 |---|---|
 | JDK | 17+ (build target `17`; runs fine on newer JDKs) |
 | Maven | 3.8+ |
-| Database | MySQL 8 by default, H2 for quick testing |
+| Database | H2 by default (zero setup), MySQL 8 optional for persistence |
 
 ## 2. Running it
 
-### MySQL (default profile)
+### H2 (default, zero setup)
 
-Create the database, then start the app:
+```bash
+mvn spring-boot:run
+```
+
+In-memory, wiped on shutdown, MySQL compatibility mode. The H2 console is at
+<http://localhost:8080/h2-console> (JDBC URL `jdbc:h2:mem:examseat`, user `sa`,
+no password). For an extra explicit run, this is equivalent:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
+```
+
+### MySQL (persistent profile)
+
+Create the database, then start the app with the MySQL profile:
 
 ```sql
 CREATE DATABASE examseat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -32,21 +46,11 @@ Edit `src/main/resources/application.properties` if your MySQL credentials diffe
 then:
 
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run -Dspring.profiles.active=mysql
 ```
 
 Hibernate creates the schema automatically (`ddl-auto=update`). To start from an empty
 database, drop the existing tables first — or see [§7 Schema](#7-schema).
-
-### H2 (zero setup, for testing)
-
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
-```
-
-In-memory, wiped on shutdown, MySQL compatibility mode. The H2 console is at
-<http://localhost:8080/h2-console> (JDBC URL `jdbc:h2:mem:examseat`, user `sa`,
-no password).
 
 ### Build and test
 
@@ -85,7 +89,7 @@ mock backend:
 VITE_USE_MOCKS=false
 ```
 
-CORS is configured for `http://localhost:5173` (`app.cors.allowed-origins`).
+CORS is configured for `http://localhost:*` and `http://127.0.0.1:*` (`app.cors.allowed-origins`), with credentials enabled.
 
 ## 5. Authentication
 

@@ -49,8 +49,13 @@ cd Smart-Examination-Seating-Arrangement-System
 Open terminal 1 in the project root:
 ```bash
 cd backend
-mvn spring-boot:run "-Dspring-boot.run.profiles=h2"
+mvn spring-boot:run
 ```
+If your shell needs quotes because the repository path contains spaces, use:
+```powershell
+cd ".\Smart Examination Seating Arrangement System\backend"
+```
+`application.properties` now boots with `spring.profiles.active=h2` by default, so no extra profile flag is required.
 H2 is auto-seeded on first run (200 students, 8 halls, 5 exams).
 Console: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:examseat`, user `sa`, no password).
 
