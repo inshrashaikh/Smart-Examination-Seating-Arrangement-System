@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --scroll-track: transparent;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-surface text-ink dark:bg-surface-dark dark:text-slate-100;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight;
+  }
+
+  /* Focus ring used across the app */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/60 ring-offset-2 ring-offset-white dark:ring-offset-surface-dark;
+  }
+
+  ::selection {
+    @apply bg-primary-20 text-ink;
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300/70 dark:bg-slate-700/70;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-600;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  /* ---- Glassmorphism ---- */
+  .glass {
+    @apply border border-white/60 bg-white/70 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/20;
+  }
+  .glass-strong {
+    @apply border border-white/70 bg-white/85 shadow-soft-lg backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/80;
+  }
+
+  /* ---- Card surfaces ---- */
+  .card-surface {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-black/20;
+  }
+  .card-surface-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-soft-lg dark:hover:border-primary/40;
+  }
+
+  /* ---- Text helpers ---- */
+  .text-gradient {
+    @apply bg-gradient-to-br from-primary-600 via-primary-500 to-accent-500 bg-clip-text text-transparent;
+    background-size: 200% 200%;
+  }
+  .text-muted {
+    @apply text-slate-500 dark:text-slate-400;
+  }
+
+  /* ---- Skeleton shimmer ---- */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-slate-200/80 dark:bg-slate-700/60;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0.45) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.8s infinite;
+  }
+
+  /* ---- Skipping heavy shadows on hover for tables ---- */
+  .table-row-hover {
+    @apply transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  /* Hide scrollbar on horizontal chip rails */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer utilities {
+  .grid-fade {
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .perspective {
+    perspective: 1600px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+}
+
+/* ---------- Print (Hall plan / reports / attendance) ---------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .no-print,
+  nav,
+  aside,
+  .print\:hidden {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-area {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    overflow: visible !important;
+  }
+  .print-area * {
+    color: #000 !important;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,53 @@
+Smart Examination Seating Arrangement System — Requirements
+============================================================
+
+This project requires the following components to run:
+
+1. JAVA (JDK 17+)
+   - Maven 3.8+ for backend builds and tests
+   - Spring Boot 3.2.5 backend runs on `mvn spring-boot:run`
+   - Backend profile: `h2` (in-memory, no external DB needed for demo)
+   - Default profile is `mysql` — create database `examseat` if using MySQL
+
+2. NODE.JS & NPM
+   - Node 18+ (developed on Node 24)
+   - `npm install` then `npm run dev` starts the Vite dev server at http://localhost:5173
+   - `npm run build` produces production build into `dist/`
+
+3. WEB BROWSER
+   - Chromium/Firefox/Chrome to access the application at http://localhost:5173
+
+4. DEMO ACCOUNTS (seeded on first backend start)
+   - Examination cell (ADMIN):   email: admin@exam.com   password: admin123
+   - Faculty:                  email: faculty1@exam.com   password: faculty123
+   - Faculty 2-5:              same password `faculty123`, different emails
+
+5. FRONTEND ENV (`.env` already committed)
+   - VITE_API_URL=/api              # base path for all API calls
+   - VITE_API_ORIGIN=http://localhost:8080  # backend origin for proxy
+
+6. BACKEND CONFIG (`backend/src/main/resources/application.properties`)
+   - `app.seed.enabled=true` — auto-seeds demo data on first start
+   - `app.optimizer.url=${OPTIMIZER_URL:http://localhost:8000}` — Python OR-Tools service
+     URL (blank = AUTO falls back to JAVA engine)
+   - `spring.profiles.active=h2` — use in-memory H2 database for demo
+
+7. PYTHON OR-TOOLS OPTIMIZER (optional, not running locally)
+   - FastAPI service at the URL configured in `app.optimizer.url`
+   - If blank or unreachable, the backend falls back to the built-in Java greedy algorithm
+   - Running locally would require: `uvicorn optimizer:app`
+
+8. MAVEN TEST SUITE
+   - `mvn test` runs 56 tests (20 algorithm tests + 10 service tests + 16 security scoping tests)
+   - All 62 tests pass with H2 profile (per checkpoint)
+
+=== Quick start (two terminals) ===
+
+Terminal 1 — Backend:
+  cd "D:\Project\Smart Examination Seating Arrangement System\backend"
+  mvn spring-boot:run -Dspring-boot.run.profiles=h2
+
+Terminal 2 — Frontend:
+  cd "D:\Project\Smart Examination Seating Arrangement System"
+  npm install
+  npm run dev        # opens at http://localhost:5173

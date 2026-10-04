@@ -1,0 +1,2598 @@
+{
+  "info": {
+    "name": "Smart Examination Seating Arrangement System",
+    "description": "REST API for the Smart Examination Seating Arrangement System.\n\nRun the admin login request first — its test script saves data.token into the {{token}} collection variable, which every other request sends as a bearer token. After that you can run the whole collection with the collection runner: requests execute in order and share variables.\n\nDemo accounts:\n  admin@exam.com     / admin123      (ADMIN)\n  faculty1@exam.com  / faculty123    (FACULTY — needed for the /api/duties/my* requests)\n\nStart the server with: mvn spring-boot:run -Dspring-boot.run.profiles=h2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const hasToken = !!pm.collectionVariables.get(\"token\");",
+          "const isLogin = /\\/auth\\/login/.test(pm.request.url.getPath());",
+          "if (!hasToken && !isLogin) {",
+          "  console.warn(\"{{token}} is empty — run the admin login request first.\");",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Log in first — the test script on the admin login saves data.token into {{token}}, which every other request reuses.",
+      "item": [
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Stores data.token into the {{token}} collection variable. Run this first.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@exam.com\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login returns 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('envelope status is 200', () => pm.expect(json.status).to.eql(200));",
+                  "pm.test('path is echoed back', () => pm.expect(json.path).to.eql('/api/auth/login'));",
+                  "pm.test('token is present', () => pm.expect(json.data.token).to.be.a('string').and.not.empty);",
+                  "pm.test('role is ADMIN', () => pm.expect(json.data.user.role).to.eql('ADMIN'));",
+                  "",
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "console.log('Saved token for ' + json.data.user.email);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (faculty)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Use this token for the /api/duties/my* endpoints. It overwrites {{token}}, so re-run the admin login afterwards if needed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"faculty1@exam.com\",\n  \"password\": \"faculty123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Faculty\",\n  \"email\": \"new.faculty@exam.com\",\n  \"password\": \"faculty123\",\n  \"role\": \"FACULTY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin\",\n  \"phone\": \"9876543210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Stateless JWT: this only tells the client to discard the token."
+          }
+        },
+        {
+          "name": "Forgot password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Always returns 200 regardless of whether the address exists, so the endpoint cannot be used to enumerate accounts.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@exam.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reset password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@exam.com\",\n  \"token\": \"reset-token-from-email\",\n  \"newPassword\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Students (admin)",
+      "item": [
+        {
+          "name": "List (paged)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students?page=0&size=20&department=CSE&year=3&sortBy=rollNo&sortDir=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "department",
+                  "value": "CSE"
+                },
+                {
+                  "key": "year",
+                  "value": "3"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "rollNo"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List all (dropdowns)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "all"
+              ]
+            },
+            "description": "Unpaged — for select inputs."
+          }
+        },
+        {
+          "name": "Search (free text)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/search?q=arya",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "arya"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get by roll number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/roll/3CSE0009",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "roll",
+                "3CSE0009"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/S-0001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "S-0001"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rollNo\": \"CSE9999\",\n  \"name\": \"New Student\",\n  \"email\": \"new.student@college.edu\",\n  \"department\": \"CSE\",\n  \"year\": 3,\n  \"section\": \"A\",\n  \"prn\": \"2024000123\",\n  \"phone\": \"9000000000\",\n  \"gender\": \"OTHER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/S-0001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "S-0001"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Renamed Student\",\n  \"section\": \"B\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/S-0200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "S-0200"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Import template (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "template"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload CSV",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "upload"
+              ]
+            },
+            "description": "Attach a file as multipart/form-data under the field name 'file'. Accepts .csv and .xlsx/.xls. Partial success: valid rows are inserted and rejected rows come back in data.errors as {row, rollNo, field, message}."
+          }
+        },
+        {
+          "name": "Upload Excel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "upload"
+              ]
+            },
+            "description": "Same endpoint — attach an .xlsx under the field name 'file' instead of a .csv."
+          }
+        },
+        {
+          "name": "Import JSON rows",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "import"
+              ]
+            },
+            "description": "Same validation and error-report shape as the file upload.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rows\": [\n    {\n      \"rollNo\": \"CSE9001\",\n      \"name\": \"Imported One\",\n      \"department\": \"CSE\",\n      \"year\": 2,\n      \"section\": \"A\"\n    },\n    {\n      \"rollNo\": \"CSE9002\",\n      \"name\": \"\",\n      \"department\": \"CSE\",\n      \"year\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Halls (admin)",
+      "item": [
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/halls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "halls"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/halls/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "halls",
+                "availability"
+              ]
+            },
+            "description": "Per-hall seat usage for a given date."
+          }
+        },
+        {
+          "name": "Get by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/halls/H-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "halls",
+                "H-1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get by code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/halls/code/A-101",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "halls",
+                "code",
+                "A-101"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/halls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "halls"
+              ]
+            },
+            "description": "blockedSeats entries are {row, col, reason} with zero-based coordinates. They reduce usableCapacity and render as hatched cells.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"A-109\",\n  \"name\": \"Lecture Hall A-109\",\n  \"block\": \"A\",\n  \"floor\": 1,\n  \"capacity\": 60,\n  \"rowsCount\": 6,\n  \"colsCount\": 10,\n  \"type\": \"LECTURE\",\n  \"board\": \"SMART\",\n  \"facilities\": [\n    \"PROJECTOR\",\n    \"AC\"\n  ],\n  \"blockedSeats\": [\n    {\n      \"row\": 2,\n      \"col\": 5,\n      \"reason\": \"Broken projector\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/halls/H-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "halls",
+                "H-1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 30,\n  \"rowsCount\": 5,\n  \"colsCount\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/halls/H-8",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "halls",
+                "H-8"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams (admin)",
+      "item": [
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upcoming",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/upcoming",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "upcoming"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/EX-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "EX-001"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get by code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/code/EX-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "code",
+                "EX-001"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eligible students",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/EX-001/eligible-students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "EX-001",
+                "eligible-students"
+              ]
+            },
+            "description": "Students whose department and year satisfy the exam constraints."
+          }
+        },
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"EX-006\",\n  \"title\": \"Data Structures\",\n  \"subject\": \"Data Structures\",\n  \"subjectCode\": \"CS301\",\n  \"course\": \"B.Tech CSE\",\n  \"date\": \"2026-11-20\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"13:00\",\n  \"durationHours\": 3,\n  \"departments\": [\n    \"CSE\",\n    \"IT\"\n  ],\n  \"years\": [\n    2,\n    3,\n    4\n  ],\n  \"status\": \"SCHEDULED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/EX-005",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "EX-005"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Renamed Exam\",\n  \"status\": \"SCHEDULED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Publish",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/EX-005/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "EX-005",
+                "publish"
+              ]
+            },
+            "description": "Sets status to PUBLISHED and notifies every assigned invigilator."
+          }
+        },
+        {
+          "name": "Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/EX-001/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "EX-001",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams/EX-005",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams",
+                "EX-005"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seating (admin)",
+      "item": [
+        {
+          "name": "Generate plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "generate"
+              ]
+            },
+            "description": "Transactional — the previous plan is replaced atomically. With strictCapacity on (the default), halls too small for the eligible students returns HTTP 409 with an InsufficientCapacityException naming both numbers. Fix the seed to get a byte-identical plan (verified: same seed twice is byte-identical, different seeds give different layouts). The fill is a single greedy pass, not an optimiser, so it can leave avoidable same-department adjacencies; it reports them honestly in each hall's verification (adjacentSameDept, isClean, score). See README \"Known limitation — the fill is greedy, not optimal\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"examId\": \"EX-005\",\n  \"hallIds\": [\n    \"H-1\",\n    \"H-2\",\n    \"H-3\",\n    \"H-4\",\n    \"H-5\",\n    \"H-6\",\n    \"H-7\",\n    \"H-8\"\n  ],\n  \"rules\": {\n    \"mixDepartments\": true,\n    \"avoidSameDeptAdjacent\": true,\n    \"avoidSameDeptDiagonal\": true,\n    \"avoidSameYearAdjacent\": false,\n    \"keepLastRowClear\": false,\n    \"strictCapacity\": true,\n    \"seed\": 12345\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "plans"
+              ]
+            },
+            "description": "Admin sees every plan. Faculty may call this too and receive only the plans for halls they are duty-assigned to."
+          }
+        },
+        {
+          "name": "Plan detail with grid",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/plans/EX-001-H-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "plans",
+                "EX-001-H-1"
+              ]
+            },
+            "description": "Plan ids are hall-scoped (EXAM-HALL) and are exactly what GET /seating/plans returns. A faculty member asking for a plan outside their own halls gets 403, not 404."
+          }
+        },
+        {
+          "name": "Single hall grid",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/exam/EX-001/hall/H-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "exam",
+                "EX-001",
+                "hall",
+                "H-1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Per-student seat lookup",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/exam/EX-001/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "exam",
+                "EX-001",
+                "students"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Swap two seats",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/plans/EX-001-H-1/swap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "plans",
+                "EX-001-H-1",
+                "swap"
+              ]
+            },
+            "description": "Re-validates the adjacency constraints the swap would break and rejects it with HTTP 409 SeatConstraintException rather than silently producing a broken plan. Only orthogonal neighbours count, and diagonals are ignored, so same-department pairs always pass while adjacent different-department pairs never do. Omit \"validate\" or send false to override. The plan id is hall-scoped (EXAM-HALL).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"a\": {\n    \"row\": 0,\n    \"col\": 0\n  },\n  \"b\": {\n    \"row\": 0,\n    \"col\": 2\n  },\n  \"validate\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Swap by allocation id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/swap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "swap"
+              ]
+            },
+            "description": "Same operation addressed by seat-allocation id; the exam must be supplied.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"examId\": \"EX-001\",\n  \"allocationId1\": \"EX-001-H-1-0-0\",\n  \"allocationId2\": \"EX-001-H-1-0-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Publish plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/plans/EX-001-H-1/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "plans",
+                "EX-001-H-1",
+                "publish"
+              ]
+            },
+            "description": "Publishes the exam and returns the same plan with status PUBLISHED."
+          }
+        },
+        {
+          "name": "Reset plan",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/seating/exam/EX-004",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "seating",
+                "exam",
+                "EX-004"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Duties & Faculty",
+      "description": "The first block is admin-only. The /api/duties/my* block needs a faculty token and is gated on an actual duty existing for the caller, not just on the role. /api/duties/faculty and /api/dashboard/faculty are readable by faculty but clamped to themselves; /api/seating/plans is readable by faculty and scoped to the halls they invigilate.",
+      "item": [
+        {
+          "name": "List faculty",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/faculty",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "faculty"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Faculty by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/faculty/U-0002",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "faculty",
+                "U-0002"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List duties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Assign duty",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"facultyId\": \"U-0002\",\n  \"examId\": \"EX-003\",\n  \"hallId\": \"H-1\",\n  \"role\": \"INVIGILATOR\",\n  \"date\": \"2026-11-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Assign duty (alias)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"facultyId\": \"U-0003\",\n  \"examId\": \"EX-003\",\n  \"hallId\": \"H-2\",\n  \"role\": \"INVIGILATOR\",\n  \"date\": \"2026-11-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Duties for one faculty",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/faculty?email=faculty1@exam.com",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "faculty"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "faculty1@exam.com"
+                }
+              ]
+            },
+            "description": "The ?email= parameter is clamped: an admin may name anyone, a faculty member naming a colleague gets 403. The same clamp applies to /api/dashboard/faculty."
+          }
+        },
+        {
+          "name": "Update duty status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/D-0001/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "D-0001",
+                "status"
+              ]
+            },
+            "description": "Accepts the status as a query parameter (?status=COMPLETED) or as this JSON body, whichever the client prefers. Sending neither is a 400 naming both forms.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete duty",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/D-0005",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "D-0005"
+              ]
+            }
+          }
+        },
+        {
+          "name": "My duties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "my"
+              ]
+            },
+            "description": "Faculty token required."
+          }
+        },
+        {
+          "name": "My upcoming duties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/my/upcoming",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "my",
+                "upcoming"
+              ]
+            }
+          }
+        },
+        {
+          "name": "My duty detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/my/hall/H-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "my",
+                "hall",
+                "H-1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "My hall seating plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/my/hall/H-1/plan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "my",
+                "hall",
+                "H-1",
+                "plan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "My hall attendance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/duties/my/hall/H-1/attendance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "duties",
+                "my",
+                "hall",
+                "H-1",
+                "attendance"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "description": "Append ?format=pdf or ?format=excel to any of these to download a file instead of JSON. Downloads return raw bytes with a Content-Disposition header rather than the usual response envelope.",
+      "item": [
+        {
+          "name": "Hall-wise (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/hall-wise?examId=EX-003",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "hall-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                }
+              ]
+            },
+            "description": "Returns {exam, rows, totals}."
+          }
+        },
+        {
+          "name": "Hall-wise (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/hall-wise?examId=EX-003&format=pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "hall-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                },
+                {
+                  "key": "format",
+                  "value": "pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is a downloadable file', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hall-wise (Excel)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/hall-wise?examId=EX-003&format=excel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "hall-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                },
+                {
+                  "key": "format",
+                  "value": "excel"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is a downloadable file', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hall-wise (path alias)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/hall-wise/EX-003",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "hall-wise",
+                "EX-003"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Department-wise (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/department-wise?examId=EX-003",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "department-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                }
+              ]
+            },
+            "description": "Returns {exam, rows}."
+          }
+        },
+        {
+          "name": "Department-wise (path alias)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/department-wise/EX-003",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "department-wise",
+                "EX-003"
+              ]
+            },
+            "description": "Same report addressed by path instead of query string."
+          }
+        },
+        {
+          "name": "Department-wise (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/department-wise?examId=EX-003&format=pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "department-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                },
+                {
+                  "key": "format",
+                  "value": "pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is a downloadable file', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Department-wise (Excel)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/department-wise?examId=EX-003&format=excel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "department-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                },
+                {
+                  "key": "format",
+                  "value": "excel"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is a downloadable file', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student-wise (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/student-wise?examId=EX-003",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "student-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                }
+              ]
+            },
+            "description": "Returns a bare array of rows, not an object."
+          }
+        },
+        {
+          "name": "Student-wise (path alias)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/student-wise/EX-003",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "student-wise",
+                "EX-003"
+              ]
+            },
+            "description": "Same report addressed by path instead of query string."
+          }
+        },
+        {
+          "name": "Student-wise (Excel)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/student-wise?examId=EX-003&format=excel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "student-wise"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                },
+                {
+                  "key": "format",
+                  "value": "excel"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is a downloadable file', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Attendance (all halls)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/attendance?examId=EX-003",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "attendance"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                }
+              ]
+            },
+            "description": "Returns {exam, halls, rows, summary: {total, present, absent}}."
+          }
+        },
+        {
+          "name": "Attendance (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/attendance?examId=EX-003&format=pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "attendance"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "EX-003"
+                },
+                {
+                  "key": "format",
+                  "value": "pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is a downloadable file', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Attendance (one hall)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/attendance/EX-003/H-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "attendance",
+                "EX-003",
+                "H-1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Attendance sheet (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/attendance-sheet/EX-003/H-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "attendance-sheet",
+                "EX-003",
+                "H-1"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is a downloadable file', () =>",
+                  "  pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Activity",
+      "item": [
+        {
+          "name": "Admin dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "admin"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Stats (alias)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Faculty dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/faculty",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "faculty"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Recent activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/activity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "activity"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "settings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"institutionName\": \"Demo Institute\",\n  \"sessionName\": \"2026\",\n  \"allowRescheduling\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update settings (POST alias)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"institutionName\": \"Demo Institute\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Available to every authenticated user; each request returns only that caller's own notifications.",
+      "item": [
+        {
+          "name": "List mine",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unread count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "unread-count"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark one read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/N-00001/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "N-00001",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark all read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read-all"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
